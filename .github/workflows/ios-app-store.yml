@@ -30,7 +30,7 @@ permissions:
 jobs:
   archive-and-upload:
     name: Archive and Upload
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 60
     env:
       PROJECT_PATH: SnapPolish.xcodeproj
@@ -56,12 +56,16 @@ jobs:
       - name: Select Xcode
         run: |
           set -euo pipefail
-          if [ -d /Applications/Xcode_16.4.app ]; then
+          XCODE_APP="$(find /Applications -maxdepth 1 -name 'Xcode_26*.app' -type d | sort | tail -n 1)"
+          if [ -n "$XCODE_APP" ]; then
+            sudo xcode-select -s "$XCODE_APP"
+          elif [ -d /Applications/Xcode.app ]; then
+            sudo xcode-select -s /Applications/Xcode.app
+          elif [ -d /Applications/Xcode_16.4.app ]; then
             sudo xcode-select -s /Applications/Xcode_16.4.app
-          elif [ -d /Applications/Xcode_16.3.app ]; then
-            sudo xcode-select -s /Applications/Xcode_16.3.app
           fi
           xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
 
       - name: Validate CI secrets
         run: |
