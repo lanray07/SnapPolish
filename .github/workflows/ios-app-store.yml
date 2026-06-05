@@ -174,6 +174,8 @@ jobs:
             <string>export</string>
             <key>signingStyle</key>
             <string>manual</string>
+            <key>signingCertificate</key>
+            <string>Apple Distribution</string>
             <key>teamID</key>
             <string>$APPLE_TEAM_ID</string>
             <key>provisioningProfiles</key>
@@ -202,6 +204,8 @@ jobs:
             <string>export</string>
             <key>signingStyle</key>
             <string>automatic</string>
+            <key>signingCertificate</key>
+            <string>Apple Distribution</string>
             <key>teamID</key>
             <string>$APPLE_TEAM_ID</string>
             <key>stripSwiftSymbols</key>
@@ -235,6 +239,7 @@ jobs:
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
             PRODUCT_BUNDLE_IDENTIFIER="$IOS_BUNDLE_IDENTIFIER"
             CURRENT_PROJECT_VERSION="$BUILD_NUMBER"
+            CODE_SIGN_IDENTITY="Apple Distribution"
           )
 
           if [ -n "${IOS_DISTRIBUTION_CERTIFICATE_BASE64:-}" ] && [ -n "${IOS_PROVISIONING_PROFILE_BASE64:-}" ]; then
