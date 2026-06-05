@@ -43,7 +43,10 @@ function token() {
     aud: "appstoreconnect-v1",
   };
   const signingInput = `${base64url(header)}.${base64url(payload)}`;
-  const signature = crypto.sign("sha256", Buffer.from(signingInput), privateKey());
+  const signature = crypto.sign("sha256", Buffer.from(signingInput), {
+    key: privateKey(),
+    dsaEncoding: "ieee-p1363",
+  });
   return `${signingInput}.${base64url(signature)}`;
 }
 
