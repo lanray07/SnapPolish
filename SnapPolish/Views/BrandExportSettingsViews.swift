@@ -296,7 +296,7 @@ struct PaywallView: View {
     private func planRow(_ title: String, _ detail: String, _ price: String) -> some View {
         HStack(alignment: .top, spacing: 14) {
             Image(systemName: title == "Free" ? "circle" : "checkmark.circle.fill")
-                .foregroundStyle(title == "Free" ? .secondary : .cyan)
+                .foregroundStyle(title == "Free" ? Color.secondary : Color.cyan)
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.headline)

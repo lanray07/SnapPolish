@@ -203,7 +203,7 @@ struct StudioHomeView: View {
         ("AI Social Generator", "X, LinkedIn, Instagram, Threads", "megaphone", .social, .orange),
         ("AI Headlines", "Voice-enabled prompt generation", "text.quote", .headlines, .yellow),
         ("Carousel Builder", "Educational slides and walkthroughs", "rectangle.stack", .carousel, .blue),
-        ("App Store Builder", "Feature callouts and screenshot sets", "app.badge", .green),
+        ("App Store Builder", "Feature callouts and screenshot sets", "app.badge", .appStore, .green),
         ("Marketplace", "Premium template placeholder", "storefront", .templates, .purple),
         ("Analytics", "Exports, templates, activity", "chart.xyaxis.line", .analytics, .cyan),
         ("Widgets", "Recent project and quick polish", "square.grid.2x2", .widgets, .pink)
