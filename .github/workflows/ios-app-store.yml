@@ -234,7 +234,6 @@ jobs:
           BUILD_NUMBER="${BUILD_NUMBER_INPUT:-$GITHUB_RUN_NUMBER}"
           ARCHIVE_PATH="$RUNNER_TEMP/SnapPolish.xcarchive"
           mkdir -p build/logs
-          XCODE_AUTH_ARGS=()
           SIGNING_ARGS=(
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
             PRODUCT_BUNDLE_IDENTIFIER="$IOS_BUNDLE_IDENTIFIER"
@@ -261,7 +260,6 @@ jobs:
             -configuration "$CONFIGURATION" \
             -destination "generic/platform=iOS" \
             -archivePath "$ARCHIVE_PATH" \
-            "${XCODE_AUTH_ARGS[@]}" \
             clean archive \
             "${SIGNING_ARGS[@]}" \
             | tee build/logs/archive.log
