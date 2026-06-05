@@ -40,7 +40,7 @@ jobs:
       ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID || secrets.APP_STORE_CONNECT_ISSUER_ID || secrets.APPSTORE_ISSUER_ID || secrets.APPLE_API_ISSUER_ID || secrets.ASC_ISSUER_ID }}
       ASC_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_API_PRIVATE_KEY || secrets.APP_STORE_CONNECT_PRIVATE_KEY || secrets.APP_STORE_CONNECT_API_KEY || secrets.APPLE_API_PRIVATE_KEY || secrets.ASC_PRIVATE_KEY }}
       ASC_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_PRIVATE_KEY_BASE64 || secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 || secrets.APP_STORE_CONNECT_API_KEY_BASE64 || secrets.APPLE_API_PRIVATE_KEY_BASE64 || secrets.ASC_PRIVATE_KEY_BASE64 }}
-      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID || secrets.APPLE_DEVELOPMENT_TEAM || secrets.DEVELOPMENT_TEAM || secrets.TEAM_ID }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID || secrets.APPLE_TEAMID || secrets.APP_STORE_TEAM_ID || secrets.APPSTORE_TEAM_ID || secrets.APP_STORE_CONNECT_TEAM_ID || secrets.APPLE_DEVELOPER_TEAM_ID || secrets.DEVELOPER_TEAM_ID || secrets.DEVELOPMENT_TEAM_ID || secrets.APPLE_DEVELOPMENT_TEAM || secrets.DEVELOPMENT_TEAM || secrets.TEAM_ID || secrets.TEAMID }}
       IOS_BUNDLE_IDENTIFIER: ${{ secrets.IOS_BUNDLE_IDENTIFIER || secrets.BUNDLE_IDENTIFIER || secrets.APP_IDENTIFIER || 'com.snappolish.app' }}
       IOS_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_BASE64 || secrets.IOS_CERTIFICATE_BASE64 || secrets.DISTRIBUTION_CERTIFICATE_BASE64 || secrets.BUILD_CERTIFICATE_BASE64 || secrets.CERTIFICATE_BASE64 || secrets.P12_BASE64 }}
       IOS_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_PASSWORD || secrets.IOS_CERTIFICATE_PASSWORD || secrets.CERTIFICATE_PASSWORD || secrets.P12_PASSWORD }}
@@ -79,12 +79,24 @@ jobs:
           require_value ASC_ISSUER_ID
           require_value APPLE_TEAM_ID
           require_value IOS_BUNDLE_IDENTIFIER
-          require_value IOS_DISTRIBUTION_CERTIFICATE_BASE64
-          require_value IOS_PROVISIONING_PROFILE_BASE64
 
           if [ -z "${ASC_PRIVATE_KEY:-}" ] && [ -z "${ASC_PRIVATE_KEY_BASE64:-}" ]; then
             echo "::error::Add APP_STORE_CONNECT_API_PRIVATE_KEY or APP_STORE_CONNECT_API_PRIVATE_KEY_BASE64 as a GitHub Actions secret."
             exit 1
+          fi
+
+          if [ -n "${IOS_DISTRIBUTION_CERTIFICATE_BASE64:-}" ] && [ -z "${IOS_PROVISIONING_PROFILE_BASE64:-}" ]; then
+            echo "::error::IOS_PROVISIONING_PROFILE_BASE64 is required when IOS_DISTRIBUTION_CERTIFICATE_BASE64 is set."
+            exit 1
+          fi
+
+          if [ -z "${IOS_DISTRIBUTION_CERTIFICATE_BASE64:-}" ] && [ -n "${IOS_PROVISIONING_PROFILE_BASE64:-}" ]; then
+            echo "::error::IOS_DISTRIBUTION_CERTIFICATE_BASE64 is required when IOS_PROVISIONING_PROFILE_BASE64 is set."
+            exit 1
+          fi
+
+          if [ -z "${IOS_DISTRIBUTION_CERTIFICATE_BASE64:-}" ]; then
+            echo "::notice::No manual signing certificate/profile secrets found. Xcode will use automatic signing with the App Store Connect API key."
           fi
 
       - name: Prepare App Store Connect API key
@@ -108,6 +120,7 @@ jobs:
           echo "path=$ASC_KEY_PATH" >> "$GITHUB_OUTPUT"
 
       - name: Install signing certificate and provisioning profile
+        if: env.IOS_DISTRIBUTION_CERTIFICATE_BASE64 != '' && env.IOS_PROVISIONING_PROFILE_BASE64 != ''
         id: signing
         run: |
           set -euo pipefail
@@ -148,7 +161,9 @@ jobs:
           fi
 
           EXPORT_OPTIONS="$RUNNER_TEMP/ExportOptions.plist"
-          cat > "$EXPORT_OPTIONS" <<EOF
+          if [ -n "${IOS_DISTRIBUTION_CERTIFICATE_BASE64:-}" ] && [ -n "${IOS_PROVISIONING_PROFILE_BASE64:-}" ]; then
+            PROFILE_NAME="${{ steps.signing.outputs.profile_name }}"
+            cat > "$EXPORT_OPTIONS" <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
@@ -164,7 +179,7 @@ jobs:
             <key>provisioningProfiles</key>
             <dict>
               <key>$IOS_BUNDLE_IDENTIFIER</key>
-              <string>${{ steps.signing.outputs.profile_name }}</string>
+              <string>$PROFILE_NAME</string>
             </dict>
             <key>stripSwiftSymbols</key>
             <true/>
@@ -175,6 +190,30 @@ jobs:
           </dict>
           </plist>
           EOF
+          else
+            cat > "$EXPORT_OPTIONS" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>$EXPORT_METHOD</string>
+            <key>destination</key>
+            <string>export</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
+            <key>teamID</key>
+            <string>$APPLE_TEAM_ID</string>
+            <key>stripSwiftSymbols</key>
+            <true/>
+            <key>compileBitcode</key>
+            <false/>
+            <key>manageAppVersionAndBuildNumber</key>
+            <false/>
+          </dict>
+          </plist>
+          EOF
+          fi
 
           plutil -lint "$EXPORT_OPTIONS"
           cat "$EXPORT_OPTIONS"
@@ -191,6 +230,27 @@ jobs:
           BUILD_NUMBER="${BUILD_NUMBER_INPUT:-$GITHUB_RUN_NUMBER}"
           ARCHIVE_PATH="$RUNNER_TEMP/SnapPolish.xcarchive"
           mkdir -p build/logs
+          XCODE_AUTH_ARGS=()
+          SIGNING_ARGS=(
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
+            PRODUCT_BUNDLE_IDENTIFIER="$IOS_BUNDLE_IDENTIFIER"
+            CURRENT_PROJECT_VERSION="$BUILD_NUMBER"
+          )
+
+          if [ -n "${IOS_DISTRIBUTION_CERTIFICATE_BASE64:-}" ] && [ -n "${IOS_PROVISIONING_PROFILE_BASE64:-}" ]; then
+            SIGNING_ARGS+=(
+              CODE_SIGN_STYLE=Manual
+              PROVISIONING_PROFILE_SPECIFIER="${{ steps.signing.outputs.profile_name }}"
+            )
+          else
+            XCODE_AUTH_ARGS=(
+              -allowProvisioningUpdates
+              -authenticationKeyPath "${{ steps.appstore-key.outputs.path }}"
+              -authenticationKeyID "$ASC_KEY_ID"
+              -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+            )
+            SIGNING_ARGS+=(CODE_SIGN_STYLE=Automatic)
+          fi
 
           xcodebuild \
             -project "$PROJECT_PATH" \
@@ -198,12 +258,9 @@ jobs:
             -configuration "$CONFIGURATION" \
             -destination "generic/platform=iOS" \
             -archivePath "$ARCHIVE_PATH" \
+            "${XCODE_AUTH_ARGS[@]}" \
             clean archive \
-            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-            PRODUCT_BUNDLE_IDENTIFIER="$IOS_BUNDLE_IDENTIFIER" \
-            CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
-            CODE_SIGN_STYLE=Manual \
-            PROVISIONING_PROFILE_SPECIFIER="${{ steps.signing.outputs.profile_name }}" \
+            "${SIGNING_ARGS[@]}" \
             | tee build/logs/archive.log
 
           echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> "$GITHUB_ENV"
@@ -214,15 +271,22 @@ jobs:
           set -euo pipefail
           EXPORT_PATH="$RUNNER_TEMP/export"
           mkdir -p "$EXPORT_PATH" build/logs
+          XCODE_AUTH_ARGS=(
+            -authenticationKeyPath "${{ steps.appstore-key.outputs.path }}"
+            -authenticationKeyID "$ASC_KEY_ID"
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          )
+
+          if [ -z "${IOS_DISTRIBUTION_CERTIFICATE_BASE64:-}" ]; then
+            XCODE_AUTH_ARGS=(-allowProvisioningUpdates "${XCODE_AUTH_ARGS[@]}")
+          fi
 
           xcodebuild \
             -exportArchive \
             -archivePath "$ARCHIVE_PATH" \
             -exportOptionsPlist "${{ steps.export-options.outputs.path }}" \
             -exportPath "$EXPORT_PATH" \
-            -authenticationKeyPath "${{ steps.appstore-key.outputs.path }}" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            "${XCODE_AUTH_ARGS[@]}" \
             | tee build/logs/export.log
 
           IPA_PATH="$(find "$EXPORT_PATH" -maxdepth 1 -name "*.ipa" -print -quit)"
