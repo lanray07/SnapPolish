@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - ".github/workflows/ios-app-store.yml"
+      - "scripts/app-store-submit-review.mjs"
       - "SnapPolish/**"
       - "SnapPolish.xcodeproj/**"
   workflow_dispatch:
