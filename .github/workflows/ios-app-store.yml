@@ -15,6 +15,11 @@ on:
         required: true
         type: boolean
         default: true
+      submit_to_app_review:
+        description: "Submit the uploaded build to App Review"
+        required: true
+        type: boolean
+        default: false
       build_number:
         description: "Optional CFBundleVersion override"
         required: false
@@ -48,6 +53,7 @@ jobs:
       EXPORT_METHOD: ${{ secrets.IOS_EXPORT_METHOD || 'app-store-connect' }}
       BUILD_NUMBER_INPUT: ${{ github.event.inputs.build_number }}
       UPLOAD_TO_APP_STORE_CONNECT: ${{ github.event_name == 'push' || github.event.inputs.upload_to_app_store_connect == 'true' }}
+      SUBMIT_TO_APP_REVIEW: ${{ github.event_name == 'push' || github.event.inputs.submit_to_app_review == 'true' }}
 
     steps:
       - name: Checkout
@@ -333,3 +339,13 @@ jobs:
             --file "$IPA_PATH" \
             --apiKey "$ASC_KEY_ID" \
             --apiIssuer "$ASC_ISSUER_ID"
+
+      - name: Submit to App Review
+        if: env.SUBMIT_TO_APP_REVIEW == 'true'
+        env:
+          ASC_APP_ID: ${{ secrets.APP_STORE_CONNECT_APP_ID || secrets.ASC_APP_ID || '6776733568' }}
+          ASC_VERSION_STRING: ${{ secrets.APP_STORE_VERSION_STRING || secrets.ASC_VERSION_STRING || '1.0' }}
+          ASC_BUILD_NUMBER: ${{ env.BUILD_NUMBER }}
+        run: |
+          set -euo pipefail
+          node scripts/app-store-submit-review.mjs
