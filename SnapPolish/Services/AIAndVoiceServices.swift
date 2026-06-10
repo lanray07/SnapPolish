@@ -241,6 +241,7 @@ final class SubscriptionStore: ObservableObject {
     @Published var products: [Product] = []
     @Published var plan: SubscriptionPlan = .free
     @Published var isLoadingProducts = false
+    @Published var isRestoringPurchases = false
     @Published var purchaseMessage: String?
 
     private let productIDs = [
@@ -248,9 +249,33 @@ final class SubscriptionStore: ObservableObject {
         "snappolish.creator.yearly",
         "snappolish.agency.monthly"
     ]
+    private var transactionUpdatesTask: Task<Void, Never>?
+
+    init() {
+        transactionUpdatesTask = Task { [weak self] in
+            for await update in Transaction.updates {
+                await self?.handleTransactionUpdate(update)
+            }
+        }
+    }
+
+    deinit {
+        transactionUpdatesTask?.cancel()
+    }
 
     var isPro: Bool {
         plan != .free
+    }
+
+    var sortedProducts: [Product] {
+        products.sorted { first, second in
+            productSortOrder(first.id) < productSortOrder(second.id)
+        }
+    }
+
+    func prepare() async {
+        await refreshPurchasedEntitlements()
+        await loadProducts()
     }
 
     func loadProducts() async {
@@ -261,7 +286,7 @@ final class SubscriptionStore: ObservableObject {
         do {
             products = try await Product.products(for: productIDs)
         } catch {
-            purchaseMessage = "StoreKit products are placeholders until App Store Connect is configured."
+            purchaseMessage = "Subscriptions are temporarily unavailable."
         }
     }
 
@@ -273,8 +298,9 @@ final class SubscriptionStore: ObservableObject {
             case .success(let verification):
                 let transaction = try checkVerified(verification)
                 await transaction.finish()
-                plan = product.id.contains("agency") ? .agencyMonthly : .creatorProMonthly
-                purchaseMessage = "Subscription unlocked."
+                await refreshPurchasedEntitlements()
+                let activePlan = plan(for: transaction.productID) ?? plan
+                purchaseMessage = "\(activePlan.label) active."
             case .pending:
                 purchaseMessage = "Purchase pending."
             case .userCancelled:
@@ -287,9 +313,44 @@ final class SubscriptionStore: ObservableObject {
         }
     }
 
-    func activateMockPlan(_ plan: SubscriptionPlan) {
-        self.plan = plan
-        purchaseMessage = "\(plan.label) enabled for local testing."
+    func restorePurchases() async {
+        isRestoringPurchases = true
+        defer { isRestoringPurchases = false }
+
+        do {
+            try await AppStore.sync()
+            await refreshPurchasedEntitlements()
+            purchaseMessage = isPro ? "\(plan.label) restored." : "No active subscription found."
+        } catch {
+            purchaseMessage = error.localizedDescription
+        }
+    }
+
+    func reloadProducts() async {
+        products = []
+        purchaseMessage = nil
+        await loadProducts()
+    }
+
+    func refreshPurchasedEntitlements() async {
+        var bestPlan: SubscriptionPlan = .free
+
+        for await entitlement in Transaction.currentEntitlements {
+            guard
+                let transaction = try? checkVerified(entitlement),
+                transaction.revocationDate == nil,
+                transaction.expirationDate.map({ $0 > Date() }) ?? true,
+                let entitlementPlan = plan(for: transaction.productID)
+            else {
+                continue
+            }
+
+            if entitlementRank(entitlementPlan) > entitlementRank(bestPlan) {
+                bestPlan = entitlementPlan
+            }
+        }
+
+        plan = bestPlan
     }
 
     private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
@@ -298,6 +359,53 @@ final class SubscriptionStore: ObservableObject {
             throw StoreVerificationError.failedVerification
         case .verified(let safe):
             return safe
+        }
+    }
+
+    private func handleTransactionUpdate(_ update: VerificationResult<Transaction>) async {
+        do {
+            let transaction = try checkVerified(update)
+            await transaction.finish()
+            await refreshPurchasedEntitlements()
+        } catch {
+            purchaseMessage = "Unable to verify purchase."
+        }
+    }
+
+    private func plan(for productID: String) -> SubscriptionPlan? {
+        switch productID {
+        case "snappolish.creator.monthly":
+            return .creatorProMonthly
+        case "snappolish.creator.yearly":
+            return .creatorProYearly
+        case "snappolish.agency.monthly":
+            return .agencyMonthly
+        default:
+            return nil
+        }
+    }
+
+    private func productSortOrder(_ productID: String) -> Int {
+        switch productID {
+        case "snappolish.creator.monthly":
+            return 0
+        case "snappolish.creator.yearly":
+            return 1
+        case "snappolish.agency.monthly":
+            return 2
+        default:
+            return Int.max
+        }
+    }
+
+    private func entitlementRank(_ plan: SubscriptionPlan) -> Int {
+        switch plan {
+        case .free:
+            return 0
+        case .creatorProMonthly, .creatorProYearly:
+            return 1
+        case .agencyMonthly:
+            return 2
         }
     }
 }

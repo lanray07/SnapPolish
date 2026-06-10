@@ -7,6 +7,8 @@ on:
     paths:
       - ".github/workflows/ios-app-store.yml"
       - "scripts/app-store-submit-review.mjs"
+      - "scripts/app-store-submit-subscriptions.mjs"
+      - "MarketingAssets/AppStore/SubscriptionReview/**"
       - "SnapPolish/**"
       - "SnapPolish.xcodeproj/**"
   workflow_dispatch:
@@ -340,6 +342,14 @@ jobs:
             --file "$IPA_PATH" \
             --apiKey "$ASC_KEY_ID" \
             --apiIssuer "$ASC_ISSUER_ID"
+
+      - name: Prepare subscription review submissions
+        if: env.SUBMIT_TO_APP_REVIEW == 'true'
+        env:
+          ASC_APP_ID: ${{ secrets.APP_STORE_CONNECT_APP_ID || secrets.ASC_APP_ID || '6776733568' }}
+        run: |
+          set -euo pipefail
+          node scripts/app-store-submit-subscriptions.mjs
 
       - name: Submit to App Review
         if: env.SUBMIT_TO_APP_REVIEW == 'true'

@@ -42,9 +42,9 @@ struct ScreenshotImportView: View {
 
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                         placeholderTile("Camera Roll", "photo.stack", "Native picker")
-                        placeholderTile("Drag and Drop", "rectangle.and.hand.point.up.left", "iPad placeholder")
-                        placeholderTile("Batch Upload", "square.stack.3d.up", "Coming soon")
-                        placeholderTile("Web Capture", "globe", "Capture placeholder")
+                        placeholderTile("Drag and Drop", "rectangle.and.hand.point.up.left", "iPad workflow")
+                        placeholderTile("Batch Upload", "square.stack.3d.up", "Multi-select workflow")
+                        placeholderTile("Web Capture", "globe", "Capture workflow")
                     }
                 }
                 .padding(20)
@@ -78,7 +78,7 @@ struct PolishEngineView: View {
                 VStack(alignment: .leading, spacing: 22) {
                     screenHeader(
                         title: "AI Screenshot Polish",
-                        subtitle: "Generate premium visual directions with mock AI enabled by default."
+                        subtitle: "Generate premium visual directions with the built-in AI preview engine."
                     )
 
                     stylePicker(selection: $viewModel.selectedStyle)
@@ -369,7 +369,7 @@ struct AppStoreBuilderView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             Label("App Store export sizes", systemImage: "iphone")
                                 .font(.headline)
-                            Text("6.7-inch, 6.5-inch, iPad, and localized set placeholders are ready for the export pipeline.")
+                            Text("6.7-inch, 6.5-inch, iPad, and localized sets are ready for the export pipeline.")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }

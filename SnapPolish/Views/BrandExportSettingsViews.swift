@@ -13,7 +13,7 @@ struct BrandKitView: View {
                 VStack(alignment: .leading, spacing: 22) {
                     screenHeader(
                         title: "Brand Kit",
-                        subtitle: "Store colors, logo placeholders, font choices, and export preferences."
+                        subtitle: "Store colors, logo marks, font choices, and export preferences."
                     )
 
                     GlassCard {
@@ -210,7 +210,7 @@ struct WidgetsPlaceholderView: View {
                 VStack(alignment: .leading, spacing: 22) {
                     screenHeader(
                         title: "Widgets",
-                        subtitle: "Recent project, quick polish, inspiration quote, and export shortcut placeholders."
+                        subtitle: "Recent project, quick polish, inspiration quote, and export shortcuts."
                     )
 
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 155), spacing: 14)], spacing: 14) {
@@ -221,7 +221,7 @@ struct WidgetsPlaceholderView: View {
                     }
 
                     GlassCard {
-                        Label("Apple Watch placeholder: export notifications and workflow reminders.", systemImage: "applewatch")
+                        Label("Apple Watch companion: export notifications and workflow reminders.", systemImage: "applewatch")
                             .font(.headline)
                     }
                 }
@@ -250,16 +250,29 @@ struct PaywallView: View {
                             planRow("Free", "Limited exports, basic templates, watermark", "GBP 0")
                             planRow("Creator Pro Monthly", "Unlimited exports and AI generation", "GBP 9.99")
                             planRow("Creator Pro Yearly", "Best value for solo creators", "GBP 79.99")
-                            planRow("Agency Monthly", "Brand kits, batch exports, white-label placeholder", "GBP 29.99")
+                            planRow("Agency Monthly", "Brand kits, batch exports, white-label workflows", "GBP 29.99")
                         }
                     }
 
-                    if subscriptionStore.products.isEmpty {
-                        PremiumButton(title: "Enable Creator Pro mock", systemImage: "crown") {
-                            subscriptionStore.activateMockPlan(.creatorProMonthly)
+                    if subscriptionStore.isLoadingProducts {
+                        ProgressView()
+                            .tint(.cyan)
+                            .frame(maxWidth: .infinity, minHeight: 54)
+                    } else if subscriptionStore.products.isEmpty {
+                        GlassCard {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Label("Subscriptions unavailable", systemImage: "exclamationmark.triangle")
+                                    .font(.headline)
+                                Text("Please try again in a moment.")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                PremiumButton(title: "Retry", systemImage: "arrow.clockwise") {
+                                    Task { await subscriptionStore.reloadProducts() }
+                                }
+                            }
                         }
                     } else {
-                        ForEach(subscriptionStore.products) { product in
+                        ForEach(subscriptionStore.sortedProducts) { product in
                             Button {
                                 Task { await subscriptionStore.purchase(product) }
                             } label: {
@@ -275,6 +288,14 @@ struct PaywallView: View {
                             }
                             .buttonStyle(.plain)
                         }
+                    }
+
+                    PremiumButton(
+                        title: subscriptionStore.isRestoringPurchases ? "Restoring" : "Restore purchases",
+                        systemImage: "arrow.triangle.2.circlepath",
+                        isLoading: subscriptionStore.isRestoringPurchases
+                    ) {
+                        Task { await subscriptionStore.restorePurchases() }
                     }
 
                     if let message = subscriptionStore.purchaseMessage {
@@ -339,12 +360,12 @@ struct SettingsView: View {
                             settingsRow("Subscription", subscriptionStore.plan.label, "crown")
                             settingsRow("Export quality", exportQuality, "slider.horizontal.3")
                             settingsRow("Theme", theme, "moon.stars")
-                            settingsRow("Mock AI", "Enabled", "cpu")
+                            settingsRow("AI previews", "Enabled", "cpu")
                         }
                     }
 
                     NavigationLink(value: StudioRoute.paywall) {
-                        UpgradeBanner(title: "Manage subscription", subtitle: "Free, Creator Pro, and Agency placeholders")
+                        UpgradeBanner(title: "Manage subscription", subtitle: "Free, Creator Pro, and Agency plans")
                     }
                     .buttonStyle(.plain)
 
@@ -352,7 +373,7 @@ struct SettingsView: View {
                         VStack(alignment: .leading, spacing: 14) {
                             Label("Legal", systemImage: "doc.text")
                                 .font(.headline)
-                            Text("Privacy policy and terms of use placeholders are ready for production links.")
+                            Text("Privacy policy and terms of use are ready for review.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }

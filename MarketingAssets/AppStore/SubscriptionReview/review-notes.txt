@@ -1,0 +1,14 @@
+Creator Pro Monthly
+Product ID: snappolish.creator.monthly
+Review note:
+Open Settings > Manage subscription, or tap Creator Pro from the dashboard. Creator Pro Monthly unlocks unlimited exports, premium templates, AI headlines, App Store builder, social presets, and voice prompt workflows. No sign-in is required for review.
+
+Creator Pro Yearly
+Product ID: snappolish.creator.yearly
+Review note:
+Open Settings > Manage subscription, or tap Creator Pro from the dashboard. Creator Pro Yearly unlocks the same Creator Pro entitlement as monthly with annual access to unlimited exports, premium templates, AI headlines, App Store builder, social presets, and voice prompt workflows. No sign-in is required for review.
+
+Agency Monthly
+Product ID: snappolish.agency.monthly
+Review note:
+Open Settings > Manage subscription, or tap Creator Pro from the dashboard. Agency Pro unlocks the highest tier with brand kits, agency workflows, premium templates, client-ready presentation assets, batch export placeholders, and premium exports. No sign-in is required for review.

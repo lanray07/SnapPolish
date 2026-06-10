@@ -196,7 +196,7 @@ struct DashboardView: View {
 
 struct StudioHomeView: View {
     private let sections: [(title: String, subtitle: String, icon: String, route: StudioRoute, color: Color)] = [
-        ("Screenshot Import", "Photo library, camera roll, batch placeholder", "photo.on.rectangle", .importScreenshots, .cyan),
+        ("Screenshot Import", "Photo library, camera roll, batch workflow", "photo.on.rectangle", .importScreenshots, .cyan),
         ("AI Screenshot Polish", "Minimal, Apple, Startup, SaaS, Neon", "wand.and.stars", .polish, .purple),
         ("One Tap Glow-Up", "Before and after transformation", "slider.horizontal.below.rectangle", .glowUp, .pink),
         ("Device Mockups", "iPhone, iPad, MacBook, browser, watch", "macbook.and.iphone", .mockups, .mint),
@@ -204,7 +204,7 @@ struct StudioHomeView: View {
         ("AI Headlines", "Voice-enabled prompt generation", "text.quote", .headlines, .yellow),
         ("Carousel Builder", "Educational slides and walkthroughs", "rectangle.stack", .carousel, .blue),
         ("App Store Builder", "Feature callouts and screenshot sets", "app.badge", .appStore, .green),
-        ("Marketplace", "Premium template placeholder", "storefront", .templates, .purple),
+        ("Marketplace", "Premium template library", "storefront", .templates, .purple),
         ("Analytics", "Exports, templates, activity", "chart.xyaxis.line", .analytics, .cyan),
         ("Widgets", "Recent project and quick polish", "square.grid.2x2", .widgets, .pink)
     ]

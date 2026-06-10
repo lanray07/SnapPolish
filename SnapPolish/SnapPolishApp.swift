@@ -33,6 +33,9 @@ struct SnapPolishApp: App {
                 .environmentObject(subscriptionStore)
                 .environmentObject(voiceInputService)
                 .preferredColorScheme(.dark)
+                .task {
+                    await subscriptionStore.prepare()
+                }
         }
     }
 }
