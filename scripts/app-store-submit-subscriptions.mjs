@@ -334,16 +334,25 @@ async function submitSubscription(config) {
     return false;
   }
 
-  await api("POST", "/subscriptionSubmissions", {
-    data: {
-      type: "subscriptionSubmissions",
-      relationships: {
-        subscription: {
-          data: { type: "subscriptions", id: config.resource.id },
+  try {
+    await api("POST", "/subscriptionSubmissions", {
+      data: {
+        type: "subscriptionSubmissions",
+        relationships: {
+          subscription: {
+            data: { type: "subscriptions", id: config.resource.id },
+          },
         },
       },
-    },
-  });
+    });
+  } catch (error) {
+    if (error.message.includes("STATE_ERROR.FIRST_SUBSCRIPTION_MUST_BE_SUBMITTED_ON_VERSION")) {
+      console.log(`${config.label}: will be reviewed with the app version`);
+      return false;
+    }
+
+    throw error;
+  }
 
   return true;
 }
