@@ -2,6 +2,11 @@ import StoreKit
 import SwiftData
 import SwiftUI
 
+private enum LegalLinks {
+    static let privacy = URL(string: "https://github.com/lanray07/SnapPolish/blob/main/PRIVACY.md")!
+    static let terms = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
+}
+
 struct BrandKitView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var savedBrandKits: [BrandKit]
@@ -248,9 +253,9 @@ struct PaywallView: View {
                     GlassCard {
                         VStack(alignment: .leading, spacing: 18) {
                             planRow("Free", "Limited exports, basic templates, watermark", "GBP 0")
-                            planRow("Creator Pro Monthly", "Unlimited exports and AI generation", "GBP 9.99")
-                            planRow("Creator Pro Yearly", "Best value for solo creators", "GBP 79.99")
-                            planRow("Agency Monthly", "Brand kits, batch exports, white-label workflows", "GBP 29.99")
+                            planRow("Creator Pro Monthly", "1 month. Unlimited exports and AI generation.", "GBP 9.99 / month")
+                            planRow("Creator Pro Yearly", "1 year. Best value for solo creators.", "GBP 79.99 / year")
+                            planRow("Agency Monthly", "1 month. Brand kits, batch exports, white-label workflows.", "GBP 29.99 / month")
                         }
                     }
 
@@ -303,6 +308,8 @@ struct PaywallView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+
+                    subscriptionTermsCard
                 }
                 .padding(20)
             }
@@ -328,6 +335,30 @@ struct PaywallView: View {
             Spacer()
             Text(price)
                 .font(.subheadline.weight(.bold))
+                .multilineTextAlignment(.trailing)
+        }
+    }
+
+    private var subscriptionTermsCard: some View {
+        GlassCard {
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Subscription terms", systemImage: "checkmark.shield")
+                    .font(.headline)
+                Text("Plans renew automatically until cancelled. Manage or cancel any time in your Apple ID subscriptions.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 16) {
+                    Link(destination: LegalLinks.privacy) {
+                        Label("Privacy Policy", systemImage: "hand.raised")
+                    }
+                    Link(destination: LegalLinks.terms) {
+                        Label("Terms of Use", systemImage: "doc.text")
+                    }
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.cyan)
+            }
         }
     }
 }
@@ -373,9 +404,19 @@ struct SettingsView: View {
                         VStack(alignment: .leading, spacing: 14) {
                             Label("Legal", systemImage: "doc.text")
                                 .font(.headline)
-                            Text("Privacy policy and terms of use are ready for review.")
+                            Text("Review the policies that apply to SnapPolish subscriptions and app usage.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                            HStack(spacing: 16) {
+                                Link(destination: LegalLinks.privacy) {
+                                    Label("Privacy Policy", systemImage: "hand.raised")
+                                }
+                                Link(destination: LegalLinks.terms) {
+                                    Label("Terms of Use", systemImage: "doc.text")
+                                }
+                            }
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.cyan)
                         }
                     }
 
